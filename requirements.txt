@@ -1,0 +1,4 @@
+pandas==2.0.2
+fastapi==0.95.2
+matplotlib==3.7.1
+uvicorn==0.22.0
