@@ -9,7 +9,7 @@ app = FastAPI()
 dtypes = {'popularity' : object, 'overview' : object}
 
 
-data = pd.read_csv(r'C:\Users\romin\Documents\PROGRAMACION\CIENCIA DE DATOS\HENRY\LABS\PI MLops\repo\dsets\FINALdata_movies_modif.csv', parse_dates = ['release_date'], dtype = dtypes)
+data = pd.read_csv('dsets\FINALdata_movies_modif.csv', parse_dates = ['release_date'], dtype = dtypes)
 
 
 def trad_fechas(dato):
