@@ -10,11 +10,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 app = FastAPI()
 
-fecha = pd.read_csv('datasets/peliculas_por_estreno.csv', parse_dates = ['release_date'])
-popularidad = pd.read_csv('datasets/peliculas_por_popularidad.csv')
-votos = pd.read_csv('datasets/peliculas_por_votos.csv')
-actores = pd.read_csv('datasets/peliculas_por_actor.csv')
-directores = pd.read_csv('datasets/peliculas_por_director.csv', parse_dates=['release_date'])
+fecha = pd.read_csv('dsets/peliculas_por_estreno.csv', parse_dates = ['release_date'])
+popularidad = pd.read_csv('dsets/peliculas_por_popularidad.csv')
+votos = pd.read_csv('dsets/peliculas_por_votos.csv')
+actores = pd.read_csv('dsets/peliculas_por_actor.csv')
+directores = pd.read_csv('dsets/peliculas_por_director.csv', parse_dates=['release_date'])
 
 #dtypes = {'popularity' : object, 'overview' : object}
 #data = pd.read_csv('dsets/FINALdata_movies_modif.csv', parse_dates = ['release_date'], dtype = dtypes)
@@ -113,3 +113,49 @@ def get_director(nombre_director: str):
     revenue_pelicula = df_filtrado['revenue']
     retorno = df_filtrado['return'].sum()
     return {'director': nombre_director, 'retorno total': retorno, 'peliculas': peliculas, 'año': año, 'budget': budget_pelicula, 'retorno': retorno_pelicula, 'revenue': revenue_pelicula}
+
+
+
+#desarrollo del modelo
+# ordeno el dataset por popularidad y anio
+
+df_movies = pd.read_csv('dsets/modelo.csv')
+
+# defino los campos a usar en el modelo
+selected_features = ['cast','title', 'crew', 'genres']
+#print(selected_features)
+
+# reemplazo los nulos con un str vacío
+for feature in selected_features:
+  df_movies[feature] = df_movies[feature].fillna('')
+
+#combino los elementos de los campos a usar
+combined_features = df_movies['cast']+ ' ' + df_movies['title']+ ' ' + df_movies['genres']+ ' ' + df_movies['crew']
+
+# convierto los datos combinados de los campos en vectores
+vectorizer = TfidfVectorizer()
+feature_vectors = vectorizer.fit_transform(combined_features)
+
+# aplico la similitud del coseno, para obtener la similaridad entre los elementos de los vectores
+similarity = cosine_similarity(feature_vectors)
+
+list_of_all_titles = df_movies['title'].tolist()
+#print(list_of_all_titles)
+
+
+@app.get("/recomendacion/{titulo_pelicula}")
+def recomendacion(titulo_pelicula:str):
+    find_close_match = difflib.get_close_matches(titulo_pelicula, list_of_all_titles)
+    close_match = find_close_match[0]
+    index_of_the_movie = df_movies[df_movies.title == close_match]['index'].values[0]
+    similarity_score = list(enumerate(similarity[index_of_the_movie]))
+    sorted_similar_movies = sorted(similarity_score, key = lambda x:x[1], reverse = True) 
+    i = 1
+    for movie in sorted_similar_movies:
+        index = movie[0]
+        title_from_index = df_movies[df_movies.index == index]['title'].values[0]
+        if (i<6):
+            recomendadas = recomendadas + '.'+ title_from_index
+            i+=1
+    return {'Peliculas sugeridas':recomendadas}
+
